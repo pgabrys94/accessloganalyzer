@@ -13,14 +13,13 @@ ips = {}
 result = []
 web_protocols = ['HTTP', 'HTTPS', 'FTP', 'SFTP', 'FTPS', 'SCP', 'SMTP',
                  'POP3', 'IMAP', 'LDAP', 'LDAPS', 'NNTP', 'SNMP', 'Telnet', 'SSH']
-i = 0
-print(f"PROGRESS: {round(total * 100 / len(log), 2)}%", end='\r', flush=True)
+
+print(f"PROGRESS: {total} of {len(log)} ({round(total * 100 / len(log), 2)}%)", end='\r', flush=True)
 for line in log:
-    if i == 100:
-        print("", end='\r', flush=True)
-        print(f"PROGRESS: {round(total * 100 / len(log), 2)}%", end='\r', flush=True)
-        i = 0
-    i += 1
+
+    print(" " * 30, end='\r', flush=True)
+    print(f"PROGRESS: {total} of {len(log)} ({round(total * 100 / len(log), 2)}%)", end='\r', flush=True)
+
     hostname = ""
     bot_id = ""
     bot_queries = 0
@@ -82,7 +81,8 @@ for line in log:
             ips[ip][3][query_hour] = 1
 
         if cred != "-":
-            ips[ip][4].append(cred)
+            if cred not in ips[ip][4]:
+                ips[ip][4].append(cred)
 
 t_start = datetime.now()
 sorted_ips = sorted(ips.items(), key=lambda item: item[1][0], reverse=True)
