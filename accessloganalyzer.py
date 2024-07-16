@@ -76,7 +76,7 @@ def main():
         else:
             print("\n")
 
-        if "-f" or "--file" in sys.argv:
+        if "-f" in sys.argv or "--file" in sys.argv:
             flag = "-f" if "-f" in sys.argv else "--file"
             supposed_path = os.path.normpath(sys.argv[sys.argv.index(flag) + 1])
             log = log_open(supposed_path)
