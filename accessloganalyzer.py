@@ -7,17 +7,18 @@ report = os.path.join(os.getcwd(), datetime.now().strftime("%Y%m%d-%H%M%S") + "-
 with open(file, "r") as logfile:
     log = logfile.read().splitlines()
 
+log_parts = [log[i::4] for i in range(4)]
+
+
 total = 0
 bot_total_queries = 0
 ips = {}
-result = []
 web_protocols = ['HTTP', 'HTTPS', 'FTP', 'SFTP', 'FTPS', 'SCP', 'SMTP',
                  'POP3', 'IMAP', 'LDAP', 'LDAPS', 'NNTP', 'SNMP', 'Telnet', 'SSH']
 
-print(f"PROGRESS: {total} of {len(log)} ({round(total * 100 / len(log), 2)}%)", end='\r', flush=True)
 for line in log:
 
-    print(" " * 30, end='\r', flush=True)
+    print(" " * 100, end='\r', flush=True)
     print(f"PROGRESS: {total} of {len(log)} ({round(total * 100 / len(log), 2)}%)", end='\r', flush=True)
 
     hostname = ""
@@ -84,6 +85,8 @@ for line in log:
             if cred not in ips[ip][4]:
                 ips[ip][4].append(cred)
 
+
+result = []
 t_start = datetime.now()
 sorted_ips = sorted(ips.items(), key=lambda item: item[1][0], reverse=True)
 result.append(f"Total lines: {total}")
@@ -108,7 +111,7 @@ for ip, data in sorted_ips:
                           f"\tCredentials: {data[4]}" if data[4][0] != "-" or len(data[4]) > 1 else "", hits_on_hour))
 
 t_stop = datetime.now()
-result.append("\nProcessed in {:.2f} seconds".format((t_stop - t_start).total_seconds()))
+result.insert(2, "\nProcessed in {:.2f} seconds".format((t_stop - t_start).total_seconds()))
 
 with open(report, "w") as report_file:
     report_file.writelines(result)
