@@ -2,6 +2,7 @@ import os
 import socket
 from datetime import datetime
 
+t_start = datetime.now()
 file = os.path.join(os.getcwd(), "access.log")
 report = os.path.join(os.getcwd(), datetime.now().strftime("%Y%m%d-%H%M%S") + "-report" + ".txt")
 with open(file, "r") as logfile:
@@ -87,7 +88,6 @@ for line in log:
 
 
 result = []
-t_start = datetime.now()
 sorted_ips = sorted(ips.items(), key=lambda item: item[1][0], reverse=True)
 result.append(f"Total lines: {total}")
 result.append("\nBots: {} query lines [{}%]\n".format(bot_total_queries, round(bot_total_queries * 100 / total, 2)))
@@ -111,7 +111,7 @@ for ip, data in sorted_ips:
                           f"\tCredentials: {data[4]}" if data[4][0] != "-" or len(data[4]) > 1 else "", hits_on_hour))
 
 t_stop = datetime.now()
-result.insert(2, "\nProcessed in {:.2f} seconds".format((t_stop - t_start).total_seconds()))
+result.insert(1, "\nProcessed in {:.2f} seconds".format((t_stop - t_start).total_seconds()))
 
 with open(report, "w") as report_file:
     report_file.writelines(result)
