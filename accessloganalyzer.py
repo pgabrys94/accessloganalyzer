@@ -84,7 +84,7 @@ def main():
         web_protocols = ['HTTP', 'HTTPS', 'FTP', 'SFTP', 'FTPS', 'SCP', 'SMTP',
                          'POP3', 'IMAP', 'LDAP', 'LDAPS', 'NNTP', 'SNMP', 'Telnet', 'SSH']
         botnt = ['actionbot', 'both']
-        bot = ['bot', 'crawler', 'artemis']
+        bot = ['bot', 'crawler', 'artemis', 'turnitin']
 
         if limit:
             print(f"\nLIMIT: Report will only contain IPs with more than {limit} queries.")
