@@ -1,4 +1,4 @@
-# v1.2.0
+# v1.2.2
 
 import os
 import socket
@@ -9,6 +9,11 @@ t_start = datetime.now()
 
 
 def log_open(logfile):
+    """
+    Function for loading log file.
+    :param logfile: String -> path to log file
+    :return: List of lines from logfile OR exit.
+    """
 
     if os.path.exists(logfile):
         with open(logfile, "r") as logfile:
@@ -19,6 +24,11 @@ def log_open(logfile):
 
 
 def log_detect(webserver):
+    """
+    Function for detecting logfile based on directories in /var/log
+    :param webserver: String | None -> predefined webserver
+    :return: List of lines from logfile OR exit.
+    """
 
     if webserver is None:
         f_name = "access.log.1"
@@ -46,13 +56,17 @@ def log_detect(webserver):
 
 
 def main():
+    """
+    Main function for log analysis.
+    :return:
+    """
     try:
         if "-l" in sys.argv or "--limit" in sys.argv:
             limit_flag = "-l" if "-l" in sys.argv else "--limit"
             limit_index = sys.argv.index(limit_flag) + 1
             limit = int(sys.argv[limit_index]) if sys.argv[limit_index].isnumeric() else 0
         else:
-            print("Bad limit value, going unlimited...")
+            print("Bad or missing limit value, default: no limit (0)")
             limit = 0
 
         if limit == 0:
@@ -70,6 +84,7 @@ def main():
         web_protocols = ['HTTP', 'HTTPS', 'FTP', 'SFTP', 'FTPS', 'SCP', 'SMTP',
                          'POP3', 'IMAP', 'LDAP', 'LDAPS', 'NNTP', 'SNMP', 'Telnet', 'SSH']
         botnt = ['actionbot', 'both']
+        bot = ['bot', 'crawler', 'artemis']
 
         if limit:
             print(f"\nLIMIT: Report will only contain IPs with more than {limit} queries.")
@@ -98,7 +113,8 @@ def main():
                     if "get" in part.lower() or "post" in part.lower():
                         break
                     for s_part in part.split():
-                        is_bot = "bot" in s_part.lower() and any(keyword not in s_part.lower() for keyword in botnt)
+                        is_bot = (any(word in s_part.lower() for word in bot) and
+                                  any(keyword not in s_part.lower() for keyword in botnt))
                         is_protocol = any(proto.lower() in s_part.lower() for proto in web_protocols)
                         if is_bot and not is_protocol:
                             bot_id = s_part
