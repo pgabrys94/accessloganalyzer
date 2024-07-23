@@ -60,14 +60,36 @@ def main():
     Main function for log analysis.
     :return:
     """
+
+    help_text = """
+Switches available:
+\t-f --file\t provide access.log file path [/var/log/nginx|apache/access.log]
+\t-l --limit\t makes report contain only IPs with >= [0] queries,
+\t-q --query\t perform DNS reverse lookup on IPs with >= [500] queries (bots are always queried),
+\t-c --cred\t move queries containing credentials to top (also skips limit flag for those queries),
+
+    """
+
     try:
         if "-l" in sys.argv or "--limit" in sys.argv:
             limit_flag = "-l" if "-l" in sys.argv else "--limit"
             limit_index = sys.argv.index(limit_flag) + 1
             limit = int(sys.argv[limit_index]) if sys.argv[limit_index].isnumeric() else 0
         else:
-            print("Bad or missing limit value, default: no limit (0)")
             limit = 0
+        print(f"Report limit: >={limit} queries")
+
+        if "-q" in sys.argv or "--query" in sys.argv:
+            resolve_flag = "-q" if "-q" in sys.argv else "--query"
+            resolve_index = sys.argv.index(resolve_flag) + 1
+            resolve_limit = int(sys.argv[resolve_index]) if sys.argv[resolve_index].isnumeric() else 500
+        else:
+            resolve_limit = 500
+        print(f"Queries needed to resolve: >={resolve_limit}")
+
+        if "h" in sys.argv or "--help" in sys.argv:
+            print(help_text)
+            sys.exit()
 
         if limit == 0:
             report = os.path.join(os.getcwd(), datetime.now().strftime("%Y%m%d-%H%M%S") + "-report" + ".txt")
@@ -84,7 +106,7 @@ def main():
         web_protocols = ['HTTP', 'HTTPS', 'FTP', 'SFTP', 'FTPS', 'SCP', 'SMTP',
                          'POP3', 'IMAP', 'LDAP', 'LDAPS', 'NNTP', 'SNMP', 'Telnet', 'SSH']
         botnt = ['actionbot', 'both']
-        bot = ['bot', 'crawler', 'artemis', 'turnitin']
+        bot = ['bot', 'crawler', 'artemis', 'turnitin', 'barkrowler', 'bytespider', 'bytedance']
 
         if limit:
             print(f"\nLIMIT: Report will only contain IPs with more than {limit} queries.")
@@ -100,7 +122,9 @@ def main():
 
         for line in log:
 
-            print(f"PROGRESS: {total} of {len(log)} ({round(total * 100 / len(log), 2):.2f}%)", end='\r', flush=True)
+            c_ret = line != log[-1]
+            print(f"PROGRESS: {total} of {len(log)} ({round(total * 100 / len(log), 2):.2f}%)",
+                  end='\r' if c_ret else '\n', flush=True)
 
             hostname = ""
             bot_id = ""
@@ -109,7 +133,7 @@ def main():
 
             done = False
             for part in line.split('"')[::-1]:
-                if "bot" in part.lower():
+                if any(word in part.lower() for word in bot):
                     if "get" in part.lower() or "post" in part.lower():
                         break
                     for s_part in part.split():
@@ -145,7 +169,7 @@ def main():
                     if bot_id not in ips[ip][2]:
                         ips[ip][2].append(bot_id)
 
-                if (ips[ip][0] >= 500 or bot_queries > 0) and len(ips[ip][5]) == 0:
+                if (ips[ip][0] >= resolve_limit or bot_queries > 0) and len(ips[ip][5]) == 0:
                     try:
                         ips[ip][5] = socket.gethostbyaddr(ip)[0]
                     except socket.herror:
@@ -211,6 +235,8 @@ def main():
 
         with open(report, "w") as report_file:
             report_file.writelines(result)
+
+        print(f"Done, processed {total} lines in {int(round((t_stop - t_start).total_seconds(), 0))}s")
 
     except Exception as error:
         print(f"Unexpected exception occurred: {error}. Exiting...")
