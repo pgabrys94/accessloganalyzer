@@ -133,7 +133,6 @@ Switches available:
             bot_id = ""
             bot_queries = 0
             total += 1
-            statuses = {}
 
             done = False
             for part in line.split('"')[::-1]:
@@ -161,7 +160,7 @@ Switches available:
 
             pattern = r'\"[A-Z]+\s.*?\"\s(\d{3})\s'
             match = re.search(pattern, line)
-            status = match.group(1) if match else None
+            status = match.group(1) if match else ""
 
             if ip not in ips:
                 if bot_id:
@@ -219,9 +218,10 @@ Switches available:
             hits_on_hour = " \n\tTimings:\n"
             responses = ""
             for hour, hits in sorted_hours:
+                sorted_responses = sorted(hits[1].items(), key=lambda item: item[1], reverse=False)
                 if response_flag:
                     responses = "\tR: "
-                    for code, counter in hits[1].items():
+                    for code, counter in sorted_responses:
                         responses += f"{code}: {counter} | "
                 hits_on_hour += f"\t{hour}:xx - {hits[0]} hit(s);{responses}\n"
 
