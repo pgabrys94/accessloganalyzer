@@ -218,7 +218,7 @@ Switches available:
             hits_on_hour = " \n\tTimings:\n"
             responses = ""
             for hour, hits in sorted_hours:
-                sorted_responses = sorted(hits[1].items(), key=lambda item: item[1], reverse=False)
+                sorted_responses = sorted(hits[1].items(), key=lambda item: item[1], reverse=True)
                 if response_flag:
                     responses = "\tR: "
                     for code, counter in sorted_responses:
