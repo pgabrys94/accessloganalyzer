@@ -3,6 +3,7 @@
 import os
 import socket
 import sys
+import re
 from datetime import datetime
 
 t_start = datetime.now()
@@ -63,9 +64,10 @@ def main():
 
     help_text = """
 Switches available:
-\t-f --file\t provide access.log file path [/var/log/nginx|apache/access.log]
+\t-f --file\t provide access.log file path [/var/log/nginx|apache/access.log],
 \t-l --limit\t makes report contain only IPs with >= [0] queries,
 \t-q --query\t perform DNS reverse lookup on IPs with >= [500] queries (bots are always queried),
+\t-r --response\t print query response codes counter,
 \t-c --cred\t move queries containing credentials to top (also skips limit flag for those queries),
 
     """
@@ -98,6 +100,7 @@ Switches available:
                                   f"-report-TOP{limit}" + ".txt")
 
         cred_flag = True if "-c" in sys.argv or "--cred" in sys.argv else False
+        response_flag = True if "-r" in sys.argv or "--response" in sys.argv else False
         webserver = "apache" if "apache" in sys.argv else "nginx" if "nginx" in sys.argv else None
 
         total = 0
@@ -106,7 +109,7 @@ Switches available:
         web_protocols = ['HTTP', 'HTTPS', 'FTP', 'SFTP', 'FTPS', 'SCP', 'SMTP',
                          'POP3', 'IMAP', 'LDAP', 'LDAPS', 'NNTP', 'SNMP', 'Telnet', 'SSH']
         botnt = ['actionbot', 'both']
-        bot = ['bot', 'crawler', 'artemis', 'turnitin', 'barkrowler', 'bytespider', 'bytedance']
+        bot = ['bot', 'crawler', 'artemis', 'turnitin', 'barkrowler', 'bytespider', 'bytedance', 'buck']
 
         if limit:
             print(f"\nLIMIT: Report will only contain IPs with more than {limit} queries.")
@@ -130,6 +133,7 @@ Switches available:
             bot_id = ""
             bot_queries = 0
             total += 1
+            statuses = {}
 
             done = False
             for part in line.split('"')[::-1]:
@@ -155,13 +159,17 @@ Switches available:
             cred = " ".join(parts[2:cred_end]).strip()
             query_hour = parts[cred_end].split(":")[1]
 
+            pattern = r'\"[A-Z]+\s.*?\"\s(\d{3})\s'
+            match = re.search(pattern, line)
+            status = match.group(1) if match else None
+
             if ip not in ips:
                 if bot_id:
                     try:
                         hostname = socket.gethostbyaddr(ip)[0]
                     except socket.herror:
                         hostname = "NX"
-                ips[ip] = [1, bot_queries, [bot_id], {query_hour: 1}, [cred], hostname]
+                ips[ip] = [1, bot_queries, [bot_id], {query_hour: [1, {status: 1}]}, [cred], hostname]
             else:
                 ips[ip][0] += 1
                 if bot_queries > 0:
@@ -176,9 +184,13 @@ Switches available:
                         ips[ip][5] = "NX"
 
                 if query_hour in ips[ip][3]:
-                    ips[ip][3][query_hour] += 1
+                    ips[ip][3][query_hour][0] += 1
+                    if status in ips[ip][3][query_hour][1]:
+                        ips[ip][3][query_hour][1][status] += 1
+                    else:
+                        ips[ip][3][query_hour][1][status] = 1
                 else:
-                    ips[ip][3][query_hour] = 1
+                    ips[ip][3][query_hour] = [1, {status: 1}]
 
                 if cred != "-":
                     if cred not in ips[ip][4]:
@@ -205,8 +217,13 @@ Switches available:
 
             sorted_hours = sorted(data[3].items(), key=lambda item: item[0], reverse=False)
             hits_on_hour = " \n\tTimings:\n"
+            responses = ""
             for hour, hits in sorted_hours:
-                hits_on_hour += f"\t{hour}:xx - {hits} hits;\n"
+                if response_flag:
+                    responses = "\tR: "
+                    for code, counter in hits[1].items():
+                        responses += f"{code}: {counter} | "
+                hits_on_hour += f"\t{hour}:xx - {hits[0]} hit(s);{responses}\n"
 
             speed = round(data[0] / 24)
             if data[0] > limit:
